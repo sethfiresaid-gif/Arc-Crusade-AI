@@ -1,0 +1,21 @@
+{
+  "epic_fantasy": {
+    "rules": [
+      "Doseer worldbuilding via actie/dialoog; voorkom frontloaded info-dumps.",
+      "Maak stakes tastbaar per scene (persoonlijk + plotmatig).",
+      "Gebruik concrete zintuigelijke ankers (weer, terrein, landmark)."
+    ]
+  },
+  "romance": {
+    "rules": [
+      "Verhoog subtekst in dialoog; verlangen vs praktische bezwaren.",
+      "Zorg voor emotionele pay-off per hoofdstuk (micro-arc)."
+    ]
+  },
+  "thriller": {
+    "rules": [
+      "Korte zinnen bij spanning; clifflets per scene.",
+      "Beperk expositie; toon via acties/sporen."
+    ]
+  }
+}
