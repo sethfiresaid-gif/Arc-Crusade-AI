@@ -15,6 +15,42 @@ from dotenv import load_dotenv
 # Load environment variables for local development
 load_dotenv()
 
+def check_password():
+    """Simple password protection for the app"""
+    def password_entered():
+        # Check if password is correct (from Streamlit secrets or env var)
+        correct_password = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", "arccrusade2024"))
+        if st.session_state["password"] == correct_password:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        st.markdown("### 🏰 Arc Crusade AI - Private Access")
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.image("https://via.placeholder.com/200x100/2E86AB/FFFFFF?text=ARC+CRUSADE", width=200)
+            st.text_input("🔐 Wachtwoord vereist", type="password", 
+                         on_change=password_entered, key="password",
+                         help="Voer het wachtwoord in om toegang te krijgen")
+        st.info("💡 Deze tool is alleen toegankelijk voor geautoriseerde gebruikers")
+        return False
+    elif not st.session_state["password_correct"]:
+        st.markdown("### 🏰 Arc Crusade AI - Private Access") 
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.image("https://via.placeholder.com/200x100/2E86AB/FFFFFF?text=ARC+CRUSADE", width=200)
+            st.text_input("🔐 Wachtwoord vereist", type="password", 
+                         on_change=password_entered, key="password",
+                         help="Voer het wachtwoord in om toegang te krijgen")
+        st.error("❌ Incorrect wachtwoord. Probeer opnieuw.")
+        return False
+    else:
+        return True
+
 # Import our existing functions
 from cli_manuscript_assistant import (
     call_model, read_file, split_sections, rough_metrics, enhanced_metrics,
@@ -72,6 +108,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def main():
+    # Check password first
+    if not check_password():
+        return
+    
     # Header
     st.markdown('<h1 class="main-header">📚 Arc Crusade Manuscript Assistant</h1>', unsafe_allow_html=True)
     st.markdown("---")

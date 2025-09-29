@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Crusade AI - Private Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .app-container {
+            width: 100%;
+            height: 800px;
+            border: none;
+            background: #f8f9fa;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 800px;
+            background: #f8f9fa;
+            font-size: 1.1em;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2E86AB;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .app-container {
+                height: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏰 Arc Crusade AI</h1>
+            <p>Professional Manuscript Analysis Tool</p>
+            <p><small>🔒 Private Access - Authorized Users Only</small></p>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <span>Loading Arc Crusade AI...</span>
+        </div>
+        
+        <iframe 
+            id="app-frame"
+            class="app-container"
+            src="https://jouw-app-naam.streamlit.app"
+            title="Arc Crusade AI - Manuscript Analyzer"
+            onload="hideLoading()"
+            style="display: none;">
+        </iframe>
+        
+        <div class="footer">
+            <p>&copy; 2025 Arc Crusade AI - Professional Manuscript Analysis</p>
+            <p><small>Voor vragen of ondersteuning, neem contact op via [jouw contact info]</small></p>
+        </div>
+    </div>
+
+    <script>
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('app-frame').style.display = 'block';
+        }
+        
+        // Fallback in case iframe doesn't trigger onload
+        setTimeout(hideLoading, 5000);
+    </script>
+</body>
+</html>
