@@ -198,6 +198,38 @@ def main():
     with col1:
         st.subheader("📁 Upload your manuscript")
         
+        # Client Organization Section
+        st.markdown("### 👤 Client Information")
+        col_client1, col_client2 = st.columns([2, 1])
+        
+        with col_client1:
+            client_name = st.text_input(
+                "Client Name", 
+                placeholder="e.g., John Smith, Fantasy Publishing, etc.",
+                help="Enter client name for organized export (optional but recommended)"
+            )
+        
+        with col_client2:
+            use_client_export = st.checkbox(
+                "🗂️ Organized Export",
+                value=bool(client_name),
+                help="Create client-specific folder structure"
+            )
+        
+        if use_client_export and client_name:
+            # Export path configuration
+            with st.expander("📂 Export Settings", expanded=False):
+                export_path = st.text_input(
+                    "Custom Export Path",
+                    value=r"G:\Mijn Drive\The arc crusade\Export Arc Crusade Program",
+                    help="Path where client folders will be created"
+                )
+                
+                if export_path:
+                    st.info(f"📁 Client folder will be created at:\n`{export_path}\\{client_name}_[manuscript]_[date]`")
+        
+        st.markdown("---")
+        
         # File uploader
         uploaded_files = st.file_uploader(
             "Drag your files here or click to upload",
@@ -214,6 +246,10 @@ def main():
                 for file in uploaded_files:
                     file_size = len(file.getvalue()) / 1024  # KB
                     st.write(f"• **{file.name}** ({file_size:.1f} KB)")
+                    
+            # Show export preview if client info provided
+            if use_client_export and client_name:
+                st.success(f"🎯 Will create organized export for: **{client_name}**")
         
         # Process button  
         if st.button("🚀 Analyze Manuscript", type="primary", disabled=not uploaded_files):
@@ -223,10 +259,18 @@ def main():
                 auto_save_setting = auto_save_onedrive if 'auto_save_onedrive' in locals() else False
             except NameError:
                 auto_save_setting = False
+            
+            # Prepare client export settings
+            client_export_settings = None
+            if use_client_export and client_name:
+                client_export_settings = {
+                    'client_name': client_name,
+                    'export_path': export_path if 'export_path' in locals() else None
+                }
                 
             result = process_manuscript(
                 uploaded_files, provider, model, no_rewrite, enhanced_analysis, 
-                genre, rewrite_focus, auto_save_setting
+                genre, rewrite_focus, auto_save_setting, client_export_settings
             )
             
             # Process results
@@ -255,7 +299,7 @@ def main():
         • 📊 Detailed reports
         """)
 
-def process_manuscript(uploaded_files, provider, model, no_rewrite, enhanced_analysis=True, genre="fantasy", rewrite_focus="overall", auto_save_onedrive=False):
+def process_manuscript(uploaded_files, provider, model, no_rewrite, enhanced_analysis=True, genre="fantasy", rewrite_focus="overall", auto_save_onedrive=False, client_export_settings=None):
     """Process the uploaded manuscript files"""
     
     # Progress tracking
@@ -394,7 +438,7 @@ def process_manuscript(uploaded_files, provider, model, no_rewrite, enhanced_ana
         }
         
         # Create output files
-        create_output_files(report_data, results, ts, auto_save_onedrive)
+        create_output_files(report_data, results, ts, auto_save_onedrive, client_export_settings, uploaded_files)
         
         # Step 7: Done!
         progress_bar.progress(100)
@@ -414,7 +458,7 @@ def process_manuscript(uploaded_files, provider, model, no_rewrite, enhanced_ana
         status_text.text("❌ Processing failed")
         return None, None, None
 
-def create_output_files(report_data, results, ts, auto_save_onedrive=False):
+def create_output_files(report_data, results, ts, auto_save_onedrive=False, client_export_settings=None, uploaded_files=None):
     """Create output files and prepare downloads"""
     OUTPUT_DIR.mkdir(exist_ok=True)
     rew_dir = OUTPUT_DIR / "rewrites"
@@ -464,22 +508,83 @@ def create_output_files(report_data, results, ts, auto_save_onedrive=False):
         encoding="utf-8"
     )
     
-    # OneDrive integration
-    if auto_save_onedrive:
+    # Client Export Integration
+    try:
+        from onedrive_integration import OneDriveManager
+        onedrive = OneDriveManager()
+        
         # Prepare rewrite files
         rewrite_files = list(rew_dir.glob(f"*-{ts}.md"))
         
-        success, message = save_analysis_with_onedrive(
-            analysis_data=report_data,
-            report_content="\n\n".join(report_md),
-            rewrite_files=rewrite_files,
-            timestamp=ts
-        )
+        # Client-specific export if configured
+        if client_export_settings:
+            client_name = client_export_settings.get('client_name')
+            export_path = client_export_settings.get('export_path')
+            
+            if client_name and export_path:
+                # Setup custom export path
+                if onedrive.set_custom_export_path(export_path):
+                    # Get original file for client folder
+                    original_file = None
+                    if uploaded_files:
+                        # Create temporary file to represent the original
+                        original_filename = uploaded_files[0].name
+                        original_file = Path("temp_original_" + original_filename)
+                        original_file.write_bytes(uploaded_files[0].getvalue())
+                    
+                    success = onedrive.save_analysis_to_client_folder(
+                        client_name=client_name,
+                        analysis_data=report_data,
+                        report_content="\n\n".join(report_md),
+                        original_file=original_file,
+                        rewrite_files=rewrite_files,
+                        timestamp=ts
+                    )
+                    
+                    # Clean up temp file
+                    if original_file and original_file.exists():
+                        original_file.unlink()
+                    
+                    if success:
+                        st.success(f"🎯 Client export created for **{client_name}**")
+                        st.info(f"📁 Location: `{export_path}\\{client_name}_*_{ts[:8]}`")
+                        st.info("""
+                        **📋 Organized folders created:**
+                        - `01_Original_Manuscript` - Your uploaded files
+                        - `02_Analysis_Reports` - Complete analysis report  
+                        - `03_Rewritten_Sections` - Improved sections
+                        - `04_JSON_Data` - Structured analysis data
+                        - `05_Complete_Archive` - ZIP with everything
+                        - `06_Notes_And_Feedback` - Space for communication
+                        """)
+                    else:
+                        st.warning(f"⚠️ Client export failed for {client_name}")
+                        
+                else:
+                    st.warning(f"⚠️ Export path not accessible: {export_path}")
         
-        if success:
-            st.info(f"☁️ {message}")
-        else:
-            st.warning(f"⚠️ OneDrive: {message}")
+        # Standard OneDrive integration
+        if auto_save_onedrive:
+            success, message = save_analysis_with_onedrive(
+                analysis_data=report_data,
+                report_content="\n\n".join(report_md),
+                rewrite_files=rewrite_files,
+                timestamp=ts
+            )
+            
+            if success:
+                st.info(f"☁️ {message}")
+            else:
+                st.warning(f"⚠️ OneDrive: {message}")
+                
+    except ImportError:
+        # Fallback if OneDrive integration not available
+        if auto_save_onedrive:
+            st.warning("⚠️ OneDrive integration not available")
+        if client_export_settings:
+            st.warning("⚠️ Client export requires OneDrive integration")
+    except Exception as e:
+        st.error(f"❌ Export error: {str(e)}")
 
 def display_results(report_data, results, ts):
     """Display the analysis results in Streamlit"""

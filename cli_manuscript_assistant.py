@@ -174,12 +174,13 @@ def call_model(prompt, provider="ollama", model="llama3.1", temperature=0.3, sys
         try:
             config = get_api_config()
             
-            # Create client with only non-None values
+            # Create client with API key and org (skip project for compatibility)
             client_args = {'api_key': config['api_key']}
             if config['org']:
                 client_args['organization'] = config['org']
-            if config['project']:
-                client_args['project'] = config['project']
+            # Skip project to avoid 401 errors with project-scoped keys
+            # if config['project']:
+            #     client_args['project'] = config['project']
             if config['base']:
                 client_args['base_url'] = config['base']
             
@@ -320,6 +321,8 @@ def main():
     ap.add_argument("--provider", choices=["ollama","openai"], default="ollama")
     ap.add_argument("--model", default="llama3.1")
     ap.add_argument("--no-rewrite", action="store_true", help="Skip section rewrites")
+    ap.add_argument("--client-name", help="Client name for organized export (creates client-specific folder)")
+    ap.add_argument("--export-path", help="Custom export path for client folders (e.g., G:\\Mijn Drive\\The arc crusade\\Export Arc Crusade Program)")
     args = ap.parse_args()
 
     # Combineer input
@@ -383,29 +386,60 @@ def main():
          "timeline_extract": timeline_text, "timeline_feedback": timeline_feedback,
          "sections": results}, ensure_ascii=False, indent=2), encoding="utf-8")
     
-    # Try OneDrive integration
+    # Create analysis data structure
+    analysis_data = {
+        'title': f'Manuscript Analysis {ts}',
+        'outline': outline,
+        'top_issues': top_issues,
+        'improvement_plan': plan,
+        'timeline_feedback': timeline_feedback,
+        'sections': results,
+        'metrics_summary': {
+            'total_sections': len(sections),
+            'total_words': sum(r['metrics']['words'] for r in results),
+            'avg_sentence_length': round(sum(r['metrics']['avg_sentence_words'] for r in results) / len(results), 2)
+        }
+    }
+    
+    # Get rewrite files
+    rewrite_files = list(rew_dir.glob(f"*-{ts}.md"))
+    
+    # Try OneDrive integration with client-specific export
     if HAS_ONEDRIVE:
         try:
             onedrive = OneDriveManager()
-            if onedrive.is_onedrive_available():
-                # Create analysis data for OneDrive
-                analysis_data = {
-                    'title': f'Manuscript Analysis {ts}',
-                    'outline': outline,
-                    'top_issues': top_issues,
-                    'improvement_plan': plan,
-                    'timeline_feedback': timeline_feedback,
-                    'sections': results,
-                    'metrics_summary': {
-                        'total_sections': len(sections),
-                        'total_words': sum(r['metrics']['words'] for r in results),
-                        'avg_sentence_length': round(sum(r['metrics']['avg_sentence_words'] for r in results) / len(results), 2)
-                    }
-                }
+            
+            # Setup custom export path if provided
+            if args.export_path:
+                if onedrive.set_custom_export_path(args.export_path):
+                    print(f"✅ Custom export path set: {args.export_path}")
+                else:
+                    print(f"⚠️ Custom export path not accessible: {args.export_path}")
+            
+            # If client name provided, use client-specific export
+            if args.client_name and args.export_path:
+                # Get original file for client folder
+                original_file = Path(args.files[0]) if args.files else None
                 
-                # Get rewrite files
-                rewrite_files = list(rew_dir.glob(f"*-{ts}.md"))
+                success = onedrive.save_analysis_to_client_folder(
+                    client_name=args.client_name,
+                    analysis_data=analysis_data,
+                    report_content="\n\n".join(report_md),
+                    original_file=original_file,
+                    rewrite_files=rewrite_files,
+                    timestamp=ts
+                )
                 
+                if success:
+                    print(f"✅ Complete. Local files: {OUTPUT_DIR}")
+                    print(f"🎯 Client export: {args.export_path}\\{args.client_name}_*_{ts[:8]}")
+                    print(f"📋 Analysis organized per client with complete structure!")
+                else:
+                    print(f"✅ Complete. See folder: {OUTPUT_DIR}")
+                    print("⚠️ Client export failed - files saved locally only")
+                    
+            # Standard OneDrive backup if available
+            elif onedrive.is_onedrive_available():
                 success = onedrive.save_analysis_to_onedrive(
                     analysis_data=analysis_data,
                     report_content="\n\n".join(report_md),
@@ -415,18 +449,26 @@ def main():
                 
                 if success:
                     print(f"✅ Complete. See folder: {OUTPUT_DIR}")
-                    print(f"📁 Also saved to OneDrive: {onedrive.base_path / 'Arc-Crusade-AI'}")
+                    print(f"📁 Also saved to OneDrive: {onedrive.base_path}")
+                    if args.client_name:
+                        print("💡 TIP: Use --export-path with --client-name for organized client exports")
                 else:
                     print(f"✅ Complete. See folder: {OUTPUT_DIR}")
                     print("⚠️ OneDrive save failed - files saved locally only")
             else:
                 print(f"✅ Complete. See folder: {OUTPUT_DIR}")
                 print("ℹ️ OneDrive not found - files saved locally only")
+                if args.client_name:
+                    print("💡 TIP: Use --export-path with --client-name for organized client exports")
+                    
         except Exception as e:
             print(f"✅ Complete. See folder: {OUTPUT_DIR}")
             print(f"⚠️ OneDrive error: {e}")
     else:
         print(f"✅ Complete. See folder: {OUTPUT_DIR}")
+        print("ℹ️ OneDrive integration not available")
+        if args.client_name:
+            print("💡 Install OneDrive integration for client-organized exports")
 
 if __name__ == "__main__":
     main()

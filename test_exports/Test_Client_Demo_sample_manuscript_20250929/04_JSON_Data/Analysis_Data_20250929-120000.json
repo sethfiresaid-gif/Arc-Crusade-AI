@@ -1,0 +1,22 @@
+{
+  "title": "Test Manuscript Analysis",
+  "genre_analysis": {
+    "overall_genre_alignment": 8
+  },
+  "character_analysis": {
+    "average_development_score": 7.5
+  },
+  "plot_analysis": {
+    "overall_structure_score": 8.2
+  },
+  "sections": [
+    {
+      "title": "Hoofdstuk 1",
+      "score": 8.0
+    },
+    {
+      "title": "Hoofdstuk 2",
+      "score": 7.5
+    }
+  ]
+}

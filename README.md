@@ -20,6 +20,12 @@ A powerful AI-based manuscript analysis tool with multiple interfaces: **Web App
 - Real-time progress tracking
 - Section-based filtering
 
+👤 **Client Organization:**
+- **NEW!** Client-specific folder organization
+- Automated export per client/manuscript
+- Complete analysis packages with structured folders
+- Professional delivery format
+
 🤖 **AI Provider Support:**
 - **OpenAI**: GPT-4o, GPT-4o-mini, GPT-4-turbo
 - **Ollama**: Llama3.1, Mistral, CodeLlama (local)
@@ -80,6 +86,27 @@ python cli_manuscript_assistant.py chapter1.txt chapter2.txt --model gpt-4o-mini
 
 # Skip rewrites for faster processing
 python cli_manuscript_assistant.py manuscript.docx --no-rewrite
+
+# Client-organized export (NEW!)
+python cli_manuscript_assistant.py manuscript.docx --client-name "John Smith" --export-path "G:\Exports"
+```
+
+#### 👤 Client Organization Setup
+```bash
+# Run the setup script to configure client exports
+python setup_client_export.py
+```
+
+This creates organized folders for each client:
+```
+Client_Name_Manuscript_20250929/
+├── 01_Original_Manuscript/     # Uploaded files
+├── 02_Analysis_Reports/        # Complete analysis
+├── 03_Rewritten_Sections/      # Improved sections  
+├── 04_JSON_Data/              # Structured data
+├── 05_Complete_Archive/        # ZIP with everything
+├── 06_Notes_And_Feedback/      # Communication space
+└── 00_ANALYSE_SAMENVATTING.md  # Executive summary
 ```
 
 #### API Server
