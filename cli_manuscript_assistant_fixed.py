@@ -37,12 +37,7 @@ from enhanced_analysis import (
 OUTPUT_DIR = Path("outputs"); OUTPUT_DIR.mkdir(exist_ok=True)
 
 # ====== MODEL ROUTER ======
-SYSTEM_ROLE = """You are a concise, senior fiction editor and story doctor.
-
-CRITICAL INSTRUCTION: When analyzing character names, you MUST use the EXACT names that appear in the text. Do NOT change, substitute, or invent character names. If a character is named "Eldrin" in the text, you MUST refer to them as "Eldrin" - never as "Ethan" or any other name.
-
-Always double-check character names before writing your analysis. Respond in English."""
-
+SYSTEM_ROLE = "You are a concise, senior fiction editor and story doctor."
 def rough_metrics(text):
     words = re.findall(r"\w+(?:'\w+)?", text); wc = len(words)
     sents = [s for s in re.split(r"(?<=[\.\!\?])\s+", text) if s.strip()]
@@ -209,15 +204,15 @@ def split_sections(text: str):
     parts = re.split(r"(?im)^\s*(hoofdstuk\s+\d+|chapter\s+\d+|#+\s+.+)\s*$", text)
     if len(parts) <= 1:
         blocks = [b.strip() for b in re.split(r"\n{3,}", text) if b.strip()]
-        return [{"title": f"Section {i+1}", "content": b} for i, b in enumerate(blocks)]
+        return [{"title": f"Section {i+1}", "text": b} for i, b in enumerate(blocks)]
     chunks = []
     lead = parts[0].strip()
     if lead:
-        chunks.append({"title":"Prologue/Lead","content":lead})
+        chunks.append({"title":"Prologue/Lead","text":lead})
     for i in range(1, len(parts), 2):
         title = parts[i].strip()
         body  = (parts[i+1].strip() if i+1 < len(parts) else "")
-        chunks.append({"title": title, "content": body})
+        chunks.append({"title": title, "text": body})
     return chunks
 
 def extract_time_markers(text):
@@ -233,68 +228,47 @@ def extract_time_markers(text):
     return result
 
 # ====== PROMPTS ======
-RUBRIC = """FIRST: Extract ALL character names from the text below BEFORE starting analysis.
+RUBRIC = """Beoordeel elk onderdeel op 0–5 (0=afwezig, 3=oké, 5=sterk) met 1–2 zinnen motivatie:
 
-Rate each component 0–5 (0=absent, 3=okay, 5=strong) with 1–2 sentences of reasoning:
+BELANGRIJK: Gebruik EXACTE karakternamen uit de tekst. Verander geen namen, verzin geen alternatieven.
 
-⚠️ MANDATORY: Use ONLY the exact character names found in the text. If you see "Eldrin" - use "Eldrin", NOT "Ethan" or any other name. DO NOT substitute names.
+1) Plot & structuur
+2) Pacing & spanningsboog  
+3) Personageontwikkeling & motivatie (gebruik exacte namen uit tekst)
+4) Worldbuilding & consistentie
+5) Stijl & toon (show, geen info-dumps)
+6) Dialoog (subtekst, stemmen - gebruik exacte namen)
+7) Thematiek & emotie
+8) Continuïteit & logica
 
-1) Plot & structure
-2) Pacing & tension arc
-3) Character development & motivation (use exact names: if text has "Eldrin", write "Eldrin")
-4) Worldbuilding & consistency
-5) Style & tone (show don't tell, avoid info-dumps)
-6) Dialogue (subtext, voice - use exact names from text)
-7) Theme & emotion
-8) Continuity & logic
+Lever ook: 5 micro-rewrites (zinnen/alinea's), 1 'Mini-Revision' (80–120 w), 3 vervolg-adviezen.
 
-Also provide: 5 micro-rewrites (sentences/paragraphs), 1 'Mini-Revision' (80–120 words), 3 follow-up suggestions.
-
-⚠️ FINAL CHECK: Before submitting, verify ALL character names match the original text exactly.
+LET OP: Bij het bespreken van personages, kopieer hun namen LETTERLIJK uit de originele tekst.
 """
 
 def p_outline(full_text):
-    return f"""Create a 10–15 bullet point outline of this manuscript; also provide 5 bullets covering premise/protagonist/antagonist/emotional core/genre vibe.
-TEXT:
+    return f"""Maak 10–15 bullets outline van dit manuscript; geef daarnaast 5 bullets met premisse/protagonist/antagonist/emotionele kern/genre vibe.
+TEKST:
 {full_text[:15000]}"""
 
 def p_rubric(title, text):
-    # Extract character names from text
-    import re
-    # Find potential character names (capitalized words that appear multiple times)
-    words = re.findall(r'\b[A-Z][a-z]{2,}\b', text)
-    name_counts = {}
-    stopwords = {'Het', 'De', 'Een', 'Maar', 'En', 'Of', 'Dan', 'Dus', 'Want', 'Omdat', 'Toen', 'Als', 'Dat', 'Dit', 'Die', 'Deze', 'Wel', 'Niet', 'Ook', 'Nog'}
-    
-    for word in words:
-        if word not in stopwords:
-            name_counts[word] = name_counts.get(word, 0) + 1
-    
-    # Get likely character names (appearing 2+ times)
-    character_names = [name for name, count in name_counts.items() if count >= 2]
-    character_list = ", ".join(character_names) if character_names else "geen duidelijke karakternamen gedetecteerd"
-    
-    return f"""Section: {title}
-
-CHARACTER NAMES IN THIS TEXT: {character_list}
-⚠️ USE ONLY THESE EXACT NAMES - DO NOT CHANGE OR SUBSTITUTE THEM ⚠️
-
-Rubric:
+    return f"""Sectie: {title}
+Rubriek:
 {RUBRIC}
-TEXT:
+TEKST:
 {text[:12000]}"""
 
 def p_short_rewrite(title, text):
-    return f"""Rewrite this section concisely (300–400 words), preserve core events, increase micro-tension and subtext, remove info-dumps.
-Section: {title}
-TEXT:
+    return f"""Herschrijf compact (300–400 woorden) deze sectie, behoud kerngebeurtenissen, verhoog micro-tension en subtekst, verwijder info-dumps.
+Sectie: {title}
+TEKST:
 {text[:6000]}"""
 
 def p_top_issues(rubric_blobs):
-    return "Summarize the 10 most important issues in 1 sentence per point:\n\n" + "\n\n".join(rubric_blobs)
+    return "Vat de 10 belangrijkste problemen in 1 zin per punt:\n\n" + "\n\n".join(rubric_blobs)
 
 def p_plan(outline, issues):
-    return f"""Create a phased improvement plan (Quick Wins → Structure → Style → Polishing) with goals, actions, expected effects.
+    return f"""Maak een gefaseerd verbeterplan (Quick Wins → Structure → Style → Polishing) met doelen, acties, verwacht effect.
 OUTLINE:
 {outline}
 
@@ -302,7 +276,7 @@ ISSUES:
 {issues}"""
 
 def p_timeline_feedback(timeline_rows):
-    return f"""Here are time markers per section. Identify max 10 possible inconsistencies with fix suggestions.
+    return f"""Hier zijn tijdsmarkeringen per sectie. Noem max 10 mogelijke inconsistenties met fix-suggesties.
 {timeline_rows}"""
 
 # ====== MAIN ======
@@ -316,10 +290,10 @@ def main():
         pass
 
     ap = argparse.ArgumentParser(description="Manuscript analyzer (CLI)")
-    ap.add_argument("files", nargs="+", help="Path to .docx/.md/.txt files")
+    ap.add_argument("files", nargs="+", help="Pad naar .docx/.md/.txt")
     ap.add_argument("--provider", choices=["ollama","openai"], default="ollama")
     ap.add_argument("--model", default="llama3.1")
-    ap.add_argument("--no-rewrite", action="store_true", help="Skip section rewrites")
+    ap.add_argument("--no-rewrite", action="store_true", help="Sla sectie-herschrijf over")
     args = ap.parse_args()
 
     # Combineer input
@@ -335,12 +309,12 @@ def main():
     rubric_blobs = []
 
     for sec in sections:
-        m = rough_metrics(sec["content"])
-        rub = call_model(p_rubric(sec["title"], sec["content"]), args.provider, args.model, 0.3)
+        m = rough_metrics(sec["text"])
+        rub = call_model(p_rubric(sec["title"], sec["text"]), args.provider, args.model, 0.3)
         rubric_blobs.append(f"--- {sec['title']} ---\n{rub[:4000]}")
         rewrite = ""
         if not args.no_rewrite:
-            rewrite = call_model(p_short_rewrite(sec["title"], sec["content"]), args.provider, args.model, 0.5)
+            rewrite = call_model(p_short_rewrite(sec["title"], sec["text"]), args.provider, args.model, 0.5)
         results.append({"title": sec["title"], "metrics": m, "rubric": rub, "rewrite": rewrite})
 
     top_issues = call_model(p_top_issues(rubric_blobs), args.provider, args.model, 0.2)
@@ -348,7 +322,7 @@ def main():
 
     timeline_rows = []
     for sec in sections:
-        marks = extract_time_markers(sec["content"])
+        marks = extract_time_markers(sec["text"])
         pretty = "; ".join([f"{k}:{v}" for (k,v) in marks]) if marks else "(geen)"
         timeline_rows.append(f"* {sec['title']}: {pretty}")
     timeline_text = "\n".join(timeline_rows)
@@ -356,19 +330,19 @@ def main():
 
     # Exports
     ts = time.strftime("%Y%m%d-%H%M%S")
-    report_md = [f"# Manuscript Analysis Report – {ts}",
+    report_md = [f"# Manuscript Rapport – {ts}",
                  "## Outline", outline,
                  "## Top 10 Issues", top_issues,
-                 "## Improvement Plan", plan,
-                 "## Timeline (extraction)", "```\n"+timeline_text+"\n```",
-                 "## Timeline Consistency (advice)", timeline_feedback,
-                 "## Sections"]
+                 "## Verbeterplan", plan,
+                 "## Tijdlijn (extractie)", "```\n"+timeline_text+"\n```",
+                 "## Tijdlijn-consistentie (advies)", timeline_feedback,
+                 "## Secties"]
     rew_dir = OUTPUT_DIR / "rewrites"; rew_dir.mkdir(exist_ok=True)
     for r in results:
         report_md += [f"### {r['title']}",
                       f"- Metrics: {json.dumps(r['metrics'])}",
-                      "#### Analysis", r["rubric"],
-                      "#### Rewrite Suggestion", r["rewrite"] or "_(disabled)_"]
+                      "#### Rubriek", r["rubric"],
+                      "#### Herschrijfsuggestie", r["rewrite"] or "_(uit)_"]
         if r["rewrite"]:
             safe = re.sub(r"[^a-zA-Z0-9_-]+","-", r["title"])[:60]
             (rew_dir / f"{safe}-{ts}.md").write_text(r["rewrite"], encoding="utf-8")
@@ -414,19 +388,19 @@ def main():
                 )
                 
                 if success:
-                    print(f"✅ Complete. See folder: {OUTPUT_DIR}")
-                    print(f"📁 Also saved to OneDrive: {onedrive.base_path / 'Arc-Crusade-AI'}")
+                    print(f"✅ Klaar. Zie map: {OUTPUT_DIR}")
+                    print(f"📁 Ook opgeslagen in OneDrive: {onedrive.base_path / 'Arc-Crusade-AI'}")
                 else:
-                    print(f"✅ Complete. See folder: {OUTPUT_DIR}")
-                    print("⚠️ OneDrive save failed - files saved locally only")
+                    print(f"✅ Klaar. Zie map: {OUTPUT_DIR}")
+                    print("⚠️ OneDrive opslaan mislukt - bestanden alleen lokaal opgeslagen")
             else:
-                print(f"✅ Complete. See folder: {OUTPUT_DIR}")
-                print("ℹ️ OneDrive not found - files saved locally only")
+                print(f"✅ Klaar. Zie map: {OUTPUT_DIR}")
+                print("ℹ️ OneDrive niet gevonden - bestanden alleen lokaal opgeslagen")
         except Exception as e:
-            print(f"✅ Complete. See folder: {OUTPUT_DIR}")
+            print(f"✅ Klaar. Zie map: {OUTPUT_DIR}")
             print(f"⚠️ OneDrive error: {e}")
     else:
-        print(f"✅ Complete. See folder: {OUTPUT_DIR}")
+        print(f"✅ Klaar. Zie map: {OUTPUT_DIR}")
 
 if __name__ == "__main__":
     main()
