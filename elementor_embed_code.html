@@ -1,0 +1,123 @@
+<!-- Elementor HTML Widget Code voor Arc Crusade AI -->
+<div class="arc-crusade-container" style="
+    width: 100%;
+    min-height: 900px;
+    height: 900px;
+    position: relative;
+    background: #ffffff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin: 20px 0;
+">
+    <!-- Header Section -->
+    <div style="
+        background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+        color: white;
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+        z-index: 10;
+    ">
+        <h2 style="
+            margin: 0 0 8px 0;
+            font-size: 2.2em;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        ">🏰 Arc Crusade AI</h2>
+        <p style="
+            margin: 0 0 5px 0;
+            font-size: 1.1em;
+            opacity: 0.95;
+        ">Professional Manuscript Analysis Tool</p>
+        <small style="
+            opacity: 0.8;
+            font-size: 0.9em;
+        ">🔒 Private Access - Authorized Users Only</small>
+    </div>
+
+    <!-- Main App Iframe -->
+    <iframe 
+        src="https://arc-crusade.streamlit.app/"
+        style="
+            width: 100%;
+            height: 780px;
+            border: none;
+            display: block;
+            background: #f8f9fa;
+        "
+        frameborder="0"
+        scrolling="yes"
+        allowfullscreen
+        title="Arc Crusade AI - Manuscript Analyzer"
+        loading="lazy">
+    </iframe>
+
+    <!-- Footer -->
+    <div style="
+        background: #f8f9fa;
+        padding: 12px 20px;
+        text-align: center;
+        color: #666;
+        font-size: 0.85em;
+        border-top: 1px solid #dee2e6;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    ">
+        <p style="margin: 0;">© 2025 Arc Crusade AI - Professional Manuscript Analysis</p>
+    </div>
+</div>
+
+<!-- Responsive CSS -->
+<style>
+/* Elementor specific overrides */
+.elementor-widget-html {
+    min-height: 900px !important;
+}
+
+.elementor-widget-html .elementor-widget-container {
+    min-height: 900px !important;
+    padding: 0 !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .arc-crusade-container {
+        height: 700px !important;
+        min-height: 700px !important;
+        margin: 10px 0 !important;
+        border-radius: 10px !important;
+    }
+    
+    .arc-crusade-container iframe {
+        height: 580px !important;
+    }
+    
+    .arc-crusade-container h2 {
+        font-size: 1.8em !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .arc-crusade-container {
+        height: 600px !important;
+        min-height: 600px !important;
+    }
+    
+    .arc-crusade-container iframe {
+        height: 480px !important;
+    }
+    
+    .arc-crusade-container div[style*="padding: 25px"] {
+        padding: 20px 15px !important;
+    }
+}
+
+/* Loading state styling */
+.arc-crusade-container iframe[src=""] {
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="20" fill="none" stroke="%232E86AB" stroke-width="4" stroke-dasharray="31.416" stroke-dashoffset="31.416"><animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/></circle></svg>') center center no-repeat;
+    background-size: 50px 50px;
+}
+</style>
