@@ -4,13 +4,33 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.pdb
 .env
+.env.*
 venv/
 .venv/
-.env.*
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# App specific
+outputs/
+temp_*
 
 # OS
 .DS_Store
+Thumbs.db
 
-# App
-outputs/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/

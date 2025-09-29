@@ -23,8 +23,12 @@ def call_model(prompt, provider="ollama", model="llama3.1", temperature=0.3, sys
         return (r.json().get("message") or {}).get("content","").strip()
     elif provider == "openai":
         from openai import OpenAI
+        api_key = os.getenv("OPENAI_API_KEY")
+        org = os.getenv("OPENAI_ORG_ID")
+        project = os.getenv("OPENAI_PROJECT")
         base = os.getenv("OPENAI_BASE")
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=base) if base else OpenAI()
+
+        client = OpenAI(api_key=api_key, organization=org, project=project, base_url=base)
         resp = client.chat.completions.create(model=model, temperature=temperature,
                     messages=[{"role":"system","content":system},{"role":"user","content":prompt}])
         return resp.choices[0].message.content.strip()
